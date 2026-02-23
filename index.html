@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Transitions with WebGL</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>PDF Transitions with WebGL</h1>
+            <p>Interactive PDF viewer with WebGL-powered transitions</p>
+        </header>
+
+        <main>
+            <div class="controls">
+                <div class="control-group">
+                    <label for="pdfUpload">Upload PDF:</label>
+                    <input type="file" id="pdfUpload" accept="application/pdf">
+                </div>
+                
+                <div class="control-group">
+                    <button id="prevPage">Previous Page</button>
+                    <span id="pageInfo">Page: <span id="currentPage">1</span> / <span id="totalPages">-</span></span>
+                    <button id="nextPage">Next Page</button>
+                </div>
+
+                <div class="control-group">
+                    <label for="transitionSelect">Transition Effect:</label>
+                    <select id="transitionSelect">
+                        <option value="fade">Fade</option>
+                        <option value="slide">Slide</option>
+                        <option value="zoom">Zoom</option>
+                        <option value="cube">Cube</option>
+                        <option value="wave">Wave</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <button id="fullscreenBtn">Fullscreen</button>
+                </div>
+            </div>
+
+            <div class="viewer">
+                <canvas id="pdfCanvas"></canvas>
+                <canvas id="webglCanvas"></canvas>
+            </div>
+        </main>
+
+        <footer>
+            <p>Powered by PDF.js and WebGL</p>
+        </footer>
+    </div>
+
+    <!-- PDF.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://unpkg.com/gl-transitions@1/gl-transitions.js"></script>
+    
+    <!-- Application Scripts -->
+    <script src="js/webgl-utils.js"></script>
+    <script src="js/pdf-handler.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
