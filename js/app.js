@@ -121,6 +121,8 @@ class PDFTransitionsApp {
                     this.totalPages = result.totalPages;
                     this.currentPage = 1;
                     this.updatePageInfo();
+                    // Show the PDF canvas
+                    this.pdfCanvas.style.display = 'block';
                     this.renderPage();
                 } else {
                     console.error('Failed to load PDF:', result.error);
