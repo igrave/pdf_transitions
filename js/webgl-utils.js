@@ -109,6 +109,7 @@ class WebGLUtils {
             uniform sampler2D u_texture1;
             uniform sampler2D u_texture2;
             uniform float u_progress;
+            uniform float u_direction;
             varying vec2 v_texCoord;
             
             void main() {
@@ -126,16 +127,27 @@ class WebGLUtils {
             uniform sampler2D u_texture1;
             uniform sampler2D u_texture2;
             uniform float u_progress;
+            uniform float u_direction;
             varying vec2 v_texCoord;
             
             void main() {
-                vec2 coord1 = v_texCoord + vec2(-u_progress, 0.0);
-                vec2 coord2 = v_texCoord + vec2(1.0 - u_progress, 0.0);
+                vec2 coord1 = v_texCoord + vec2(-u_progress * u_direction, 0.0);
+                vec2 coord2 = v_texCoord + vec2((1.0 - u_progress) * u_direction, 0.0);
                 
-                if (v_texCoord.x < u_progress) {
-                    gl_FragColor = texture2D(u_texture2, coord2);
+                if (u_direction > 0.0) {
+                    // Forward
+                    if (v_texCoord.x < u_progress) {
+                        gl_FragColor = texture2D(u_texture2, coord2);
+                    } else {
+                        gl_FragColor = texture2D(u_texture1, coord1);
+                    }
                 } else {
-                    gl_FragColor = texture2D(u_texture1, coord1);
+                    // Backward
+                    if (v_texCoord.x > 1.0 - u_progress) {
+                        gl_FragColor = texture2D(u_texture2, coord2);
+                    } else {
+                        gl_FragColor = texture2D(u_texture1, coord1);
+                    }
                 }
             }
         `;
@@ -148,11 +160,12 @@ class WebGLUtils {
             uniform sampler2D u_texture1;
             uniform sampler2D u_texture2;
             uniform float u_progress;
+            uniform float u_direction;
             varying vec2 v_texCoord;
             
             void main() {
                 vec2 center = vec2(0.5, 0.5);
-                float scale = 1.0 + u_progress * 0.5;
+                float scale = 1.0 + u_progress * 0.5 * u_direction;
                 vec2 coord1 = center + (v_texCoord - center) * scale;
                 
                 vec4 color1 = texture2D(u_texture1, coord1);
@@ -214,7 +227,7 @@ class WebGLUtils {
         }
     }
 
-    performTransition(fromImage, toImage, transitionType, duration) {
+    performTransition(fromImage, toImage, transitionType, duration, direction = 1) {
         return new Promise((resolve) => {
             // Create shader program for this transition
             const fragmentShader = this.getFragmentShaderForTransition(transitionType);
@@ -239,6 +252,7 @@ class WebGLUtils {
             const texture1Location = this.gl.getUniformLocation(this.program, 'u_texture1');
             const texture2Location = this.gl.getUniformLocation(this.program, 'u_texture2');
             const progressLocation = this.gl.getUniformLocation(this.program, 'u_progress');
+            const directionLocation = this.gl.getUniformLocation(this.program, 'u_direction');
 
             // Bind textures
             this.gl.activeTexture(this.gl.TEXTURE0);
@@ -248,6 +262,11 @@ class WebGLUtils {
             this.gl.activeTexture(this.gl.TEXTURE1);
             this.gl.bindTexture(this.gl.TEXTURE_2D, texture2);
             this.gl.uniform1i(texture2Location, 1);
+
+            // Set direction uniform
+            if (directionLocation) {
+                this.gl.uniform1f(directionLocation, direction);
+            }
 
             // Animation loop
             const startTime = Date.now();

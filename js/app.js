@@ -147,14 +147,14 @@ class PDFTransitionsApp {
     goToPreviousPage() {
         if (this.currentPage > 1 && !this.isTransitioning) {
             this.currentPage--;
-            this.renderPageWithTransition();
+            this.renderPageWithTransition(-1); // -1 for backward
         }
     }
 
     goToNextPage() {
         if (this.currentPage < this.totalPages && !this.isTransitioning) {
             this.currentPage++;
-            this.renderPageWithTransition();
+            this.renderPageWithTransition(1); // 1 for forward
         }
     }
 
@@ -276,7 +276,7 @@ class PDFTransitionsApp {
         }
     }
 
-    async renderPageWithTransition() {
+    async renderPageWithTransition(direction = 1) {
         if (!this.pdfHandler.isPDFLoaded() || !this.webglUtils) {
             this.renderPage();
             return;
@@ -319,12 +319,13 @@ class PDFTransitionsApp {
             this.webglCanvas.style.display = 'block';
             this.pdfCanvas.style.display = 'none';
 
-            // Perform transition
+            // Perform transition with direction
             await this.webglUtils.performTransition(
                 oldCanvas,
                 newCanvas,
                 this.currentTransition,
-                800 // transition duration in ms
+                800, // transition duration in ms
+                direction // 1 for forward, -1 for backward
             );
 
             // Copy final result to PDF canvas - both pixel and display dimensions
