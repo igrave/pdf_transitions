@@ -158,6 +158,39 @@ select:focus {
     overflow: hidden;
 }
 
+/* Fullscreen styles */
+.viewer:fullscreen {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+    padding: 0;
+    margin: 0;
+}
+
+.viewer:-webkit-full-screen {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+    padding: 0;
+    margin: 0;
+}
+
+.viewer:-moz-full-screen {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+    padding: 0;
+    margin: 0;
+}
+
+.viewer:-ms-fullscreen {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+    padding: 0;
+    margin: 0;
+}
+
 #pdfCanvas,
 #webglCanvas {
     position: absolute;
@@ -165,6 +198,7 @@ select:focus {
     max-height: 100%;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     display: none;
+    object-fit: contain;
 }
 
 #pdfCanvas {

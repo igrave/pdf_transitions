@@ -97,9 +97,20 @@ class PDFTransitionsApp {
         });
 
         // Update fullscreen button text when fullscreen changes
-        document.addEventListener('fullscreenchange', () => {
+        const handleFullscreenChange = () => {
             this.updateFullscreenButton();
-        });
+            // Re-render current page with new scale when fullscreen changes
+            if (this.pdfHandler.isPDFLoaded()) {
+                setTimeout(() => {
+                    this.renderPage();
+                }, 100); // Small delay to let the viewer resize
+            }
+        };
+        
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+        document.addEventListener('MSFullscreenChange', handleFullscreenChange);
     }
 
     initWebGL() {
@@ -156,22 +167,58 @@ class PDFTransitionsApp {
         this.updatePageInfo();
         console.log('Rendering page:', this.currentPage);
         
-        // Render the current page to the PDF canvas
-        this.pdfHandler.renderPage(this.currentPage, this.pdfCanvas)
-            .then((result) => {
-                if (result && result.success) {
-                    console.log('Page rendered successfully');
-                    // Store current page canvas for transitions
-                    this.currentPageCanvas = this.pdfCanvas;
-                    // Pre-render adjacent pages for smooth navigation
-                    this.prerenderAdjacentPages();
-                } else {
-                    console.error('Failed to render page');
-                }
-            })
-            .catch((error) => {
-                console.error('Error rendering page:', error);
-            });
+        // Calculate optimal scale to fit viewer
+        this.calculateOptimalScale(this.currentPage).then(() => {
+            // Render the current page to the PDF canvas
+            this.pdfHandler.renderPage(this.currentPage, this.pdfCanvas)
+                .then((result) => {
+                    if (result && result.success) {
+                        console.log('Page rendered successfully');
+                        // Store current page canvas for transitions
+                        this.currentPageCanvas = this.pdfCanvas;
+                        // Pre-render adjacent pages for smooth navigation
+                        this.prerenderAdjacentPages();
+                    } else {
+                        console.error('Failed to render page');
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error rendering page:', error);
+                });
+        });
+    }
+
+    async calculateOptimalScale(pageNumber) {
+        if (!this.pdfHandler.isPDFLoaded()) {
+            return;
+        }
+
+        // Get viewer dimensions
+        const viewerWidth = this.viewer.clientWidth;
+        const viewerHeight = this.viewer.clientHeight;
+        
+        // Get page dimensions at scale 1.0
+        const page = await this.pdfHandler.pdfDoc.getPage(pageNumber);
+        const viewport = page.getViewport({ scale: 1.0 });
+        
+        // Check if in fullscreen mode (cross-browser)
+        const isFullscreen = document.fullscreenElement || 
+                            document.webkitFullscreenElement || 
+                            document.mozFullScreenElement || 
+                            document.msFullscreenElement;
+        
+        // Calculate scale to fit viewer (with padding, less padding in fullscreen)
+        const padding = isFullscreen ? 20 : 40; // Less padding in fullscreen
+        const scaleX = (viewerWidth - padding) / viewport.width;
+        const scaleY = (viewerHeight - padding) / viewport.height;
+        
+        // Use the smaller scale to ensure it fits both dimensions
+        const optimalScale = Math.min(scaleX, scaleY);
+        
+        // Set the scale
+        this.pdfHandler.setScale(optimalScale);
+        
+        console.log('Optimal scale calculated:', optimalScale, 'Fullscreen:', !!isFullscreen);
     }
 
     async prerenderAdjacentPages() {
@@ -250,6 +297,10 @@ class PDFTransitionsApp {
             const oldCtx = oldCanvas.getContext('2d');
             oldCtx.drawImage(this.pdfCanvas, 0, 0);
 
+            // Store the CSS display dimensions
+            const displayWidth = this.pdfCanvas.style.width;
+            const displayHeight = this.pdfCanvas.style.height;
+
             // Check if new page is cached, otherwise render it
             let newCanvas;
             if (this.pageCache.has(this.currentPage)) {
@@ -261,8 +312,10 @@ class PDFTransitionsApp {
                 await this.pdfHandler.renderPage(this.currentPage, newCanvas);
             }
 
-            // Resize WebGL canvas to match PDF canvas
+            // Resize WebGL canvas to match - both pixel and display dimensions
             this.webglUtils.resize(newCanvas.width, newCanvas.height);
+            this.webglCanvas.style.width = newCanvas.style.width;
+            this.webglCanvas.style.height = newCanvas.style.height;
             this.webglCanvas.style.display = 'block';
             this.pdfCanvas.style.display = 'none';
 
@@ -274,9 +327,11 @@ class PDFTransitionsApp {
                 800 // transition duration in ms
             );
 
-            // Copy final result to PDF canvas
+            // Copy final result to PDF canvas - both pixel and display dimensions
             this.pdfCanvas.width = newCanvas.width;
             this.pdfCanvas.height = newCanvas.height;
+            this.pdfCanvas.style.width = newCanvas.style.width;
+            this.pdfCanvas.style.height = newCanvas.style.height;
             const ctx = this.pdfCanvas.getContext('2d');
             ctx.drawImage(newCanvas, 0, 0);
 
@@ -328,7 +383,12 @@ class PDFTransitionsApp {
     }
 
     updateFullscreenButton() {
-        if (document.fullscreenElement) {
+        const isFullscreen = document.fullscreenElement || 
+                            document.webkitFullscreenElement || 
+                            document.mozFullScreenElement || 
+                            document.msFullscreenElement;
+        
+        if (isFullscreen) {
             this.fullscreenBtn.textContent = 'Exit Fullscreen';
         } else {
             this.fullscreenBtn.textContent = 'Fullscreen';

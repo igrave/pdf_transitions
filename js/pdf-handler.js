@@ -71,12 +71,20 @@ class PDFHandler {
             // Get viewport
             const viewport = page.getViewport({ scale: useScale });
             
-            // Set canvas dimensions
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
+            // Account for device pixel ratio for high-DPI displays
+            const dpr = window.devicePixelRatio || 1;
             
-            // Get canvas context
+            // Set canvas dimensions (scaled for high-DPI)
+            canvas.width = viewport.width * dpr;
+            canvas.height = viewport.height * dpr;
+            
+            // Set display size (CSS pixels)
+            canvas.style.width = viewport.width + 'px';
+            canvas.style.height = viewport.height + 'px';
+            
+            // Get canvas context and scale for high-DPI
             const context = canvas.getContext('2d');
+            context.scale(dpr, dpr);
             
             // Render page
             const renderContext = {
@@ -88,7 +96,7 @@ class PDFHandler {
             
             this.rendering = false;
             
-            console.log(`Page ${pageNumber} rendered`);
+            console.log(`Page ${pageNumber} rendered at ${dpr}x DPI`);
             
             return {
                 success: true,
